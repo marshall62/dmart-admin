@@ -137,15 +137,12 @@ export default function Home({ allArtworks, config, allTags }) {
     const content = await res.json();
     const status = await res.status;
     if (status === 201 && !exists) {
-      let temp = artworks.slice();
-      temp.push(content);
-      setArtworks(temp)
+      setArtworks([...artworks, content])
     }
     else if (status === 200 && exists) {
       const ix = artworks.findIndex(x => artwork._id === x._id);
       const newList = artworks.slice();
       newList.splice(ix,1,artwork);
-      console.log('newlist', newList);
       setArtworks(newList);
     }
 

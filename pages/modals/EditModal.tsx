@@ -177,7 +177,7 @@ export default function EditModal({children, config, artwork, allTags, show, han
               size={'small'}
               >
             </Typeahead>
-            <Form.Text className="text-muted" value={tags}>
+            <Form.Text className="text-muted" >
             </Form.Text>
           </Form.Group>
 
