@@ -32,3 +32,6 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# python db utils
+/python_db_utils/venv
