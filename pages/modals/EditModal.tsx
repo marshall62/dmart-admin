@@ -8,30 +8,27 @@ import { IConfig } from "../../models/config";
 import { IArtwork } from "../../models/artwork";
 
 
-function parseTags (tags) {
-  return tags.map(t => {
+function parseTags (tags, isExample=false): string[] {
+  const res = tags.map(t => {
     if (typeof(t) == "string")
       return t;
     else if (typeof(t) == 'object')
       return t.label;
-  })
+  });
+  if (isExample && !res.includes('exemplar'))
+    res.push('exemplar')
+  else if (!isExample && res.includes('exemplar')) 
+    res.splice(res.indexOf('exemplar'), 1)
+  return res;
 }
 
 export default function EditModal({children, config, artwork, allTags, show, handleClose, handleSave }) {
   config = config as IConfig; // because I can't set types on the destructured vars above.
   artwork = artwork as IArtwork;
-  const [title, setTitle] = useState(artwork.title || '')
-  const [price, setPrice] = useState(artwork.price || '')
-  const [isSold, setSold] = useState(artwork.isSold || false)
-  const [width, setWidth] = useState(artwork.width || '')
-  const [height, setHeight] = useState(artwork.height || '')
-  const [imagePath, setImagePath] = useState(artwork.url || '')
-  const [media, setMedia] = useState(artwork.media || '')
-  const [year, setYear] = useState(artwork.date || '')
-  const [tags, setTags] = useState(artwork.tags || [])
+
+  const [fileNum, setFileNum] = useState('')
   const [work, setWork] = useState(artwork);
   const [example, setExample] = useState(false);
-  const [categoryName, setCategoryName] = useState(artwork.exemplarTitle || '')
   let options = Array.from(allTags);
   const imagePathPrefix = config.filename;
 
@@ -39,19 +36,10 @@ export default function EditModal({children, config, artwork, allTags, show, han
   // artwork prop.  This reacts to that and then sets the state
   // to the new values.
   useEffect(() => {
-    setTitle(artwork.title || '');
-    setPrice(artwork.price || '');
-    setSold(artwork.isSold || false);
-    setWidth(artwork.width || '');
-    setHeight(artwork.height || '');
-    setImagePath(getFilename(artwork.imagePath) || '');
-    setMedia(artwork.media || '');
-    setYear(artwork.year || '');
-    setTags(artwork.tags || []);
-    setExample(!!artwork.categoryName);
-    setCategoryName(artwork.categoryName || '');
+
+    setFileNum(getFileNum(artwork.imagePath) || '');
+    setExample(artwork.tags.includes('exemplar'));
     setWork(artwork);
-    console.log("Editing artwork",artwork);
   }, [artwork])
 
   useEffect(() => {
@@ -59,38 +47,26 @@ export default function EditModal({children, config, artwork, allTags, show, han
   }, [allTags])
 
 
-  const getFilename = (imagePath) => {
+  const getFileNum = (imagePath) => {
     if (imagePath) {
       const ix = imagePath.lastIndexOf('/');
-      let fileNum = imagePath.slice(ix+1).split('_')[2];
-      return fileNum.split('.')[0]
+      let fileNumAndExt = imagePath.slice(ix+1).split('_')[2];
+      return fileNumAndExt.split('.')[0]
     }
     return '';
   }
 
   const artworkFromForm = () => {
-    const artwork =  {
-      title: title,
-      price: (price),
-      width: (width),
-      height: (height),
-      media: media,
-      year: (year),
-      categoryName: categoryName,
-      tags: parseTags(tags),
-      // this is poorly done - it won't allow entries like /portraits/dave.jpg
-      imagePath: !imagePath.startsWith(imagePathPrefix) ? (imagePathPrefix + imagePath + '.jpg') : imagePath,
-      isSold: isSold,
-      _id: work._id
-    };
-    if (example && !artwork.tags.includes('exemplar'))
-      artwork.tags.push('exemplar')
-
-    if (price === 'sold') {
-      artwork.price = undefined;
-      artwork.isSold = true;
+    const editedArtwork = {...work, 
+      tags: parseTags(work.tags, example), 
+      imagePath: fileNum ? (imagePathPrefix + fileNum + '.jpg') : '',  
     }
-    return artwork;
+    return editedArtwork;
+  }
+
+  const handleFieldChange = (e) => {
+    // clever way to set any field where field name is [e.target.id]
+    setWork({...work, [e.target.id]: e.target.value})
   }
 
   return (
@@ -101,26 +77,27 @@ export default function EditModal({children, config, artwork, allTags, show, han
         <Form>
           <Form.Group className="mb-3">
             <Form.Label>Title</Form.Label>
-            <Form.Control type="text" placeholder="Enter title" value={title}
-              onChange={(e) => setTitle(e.target.value)}/>
+            <Form.Control id="title" type="text" placeholder="Enter title" value={work.title || ''}
+              onChange={handleFieldChange}
+              />
             <Form.Text className="text-muted"></Form.Text>
           </Form.Group>
 
           <Form.Group className="mb-3">
             <Form.Label>Dimensions</Form.Label>
             <InputGroup className="mb-3">
-              <Form.Control aria-label="" placeholder="width" value={width}
-                onChange={e => setWidth(e.target.value)}/>
+              <Form.Control id="width" aria-label="" placeholder="width" value={work.width || ''}
+                onChange={handleFieldChange}/>
               <InputGroup.Text>X</InputGroup.Text>
-              <Form.Control aria-label="" placeholder="height" value={height}
-                onChange={e => setHeight(e.target.value)}/>
+              <Form.Control id="height" aria-label="" placeholder="height" value={work.height || ''}
+                onChange={handleFieldChange}/>
             </InputGroup>
           </Form.Group>
 
           <Form.Group className="mb-3">
             <Form.Label>Year</Form.Label>
-            <Form.Control type="text" value={year}
-              onChange={e => setYear(e.target.value) }/>
+            <Form.Control id="year" type="text" value={work.year || ''}
+              onChange={handleFieldChange}/>
             <Form.Text className="text-muted">
             </Form.Text>
           </Form.Group>
@@ -129,23 +106,23 @@ export default function EditModal({children, config, artwork, allTags, show, han
             <Form.Label>Filename</Form.Label>
             <InputGroup className="mb-3">
               <InputGroup.Text>{imagePathPrefix}</InputGroup.Text>
-              <Form.Control aria-label="" value={imagePath}
-                onChange={e => setImagePath(e.target.value)}/>
+              <Form.Control aria-label="" value={fileNum}
+                onChange={e => setFileNum(e.target.value)}/>
               <InputGroup.Text>.jpg</InputGroup.Text>
             </InputGroup>
           </Form.Group>
 
           <Form.Group className="mb-3">
             <Form.Label>Media</Form.Label>
-            <Form.Select aria-label="media" value={media}
-              onChange={e => setMedia(e.target.value)}>
+            <Form.Select id="media" aria-label="media" value={work.media || ''}
+              onChange={handleFieldChange}>
               <option>-</option>
-              <option value="Oil on canvas">Oil on canvas</option>
-              <option value="Oil on paper">Oil on paper</option>
-              <option value="Oil on muslin panel">Oil on muslin panel</option>
-              <option value="Oil on panel">Oil on panel</option>
-              <option value="Pencil">Pencil</option>
-              <option value="Charcoal">Charcoal</option>
+              <option value="oil on canvas">Oil on canvas</option>
+              <option value="oil on paper">Oil on paper</option>
+              <option value="oil on muslin panel">Oil on muslin panel</option>
+              <option value="oil on panel">Oil on panel</option>
+              <option value="pencil">Pencil</option>
+              <option value="charcoal">Charcoal</option>
             </Form.Select>
           </Form.Group>
 
@@ -153,25 +130,28 @@ export default function EditModal({children, config, artwork, allTags, show, han
             <Form.Label>Price</Form.Label>
             <InputGroup className="mb-3">
               <InputGroup.Text>$</InputGroup.Text>
-              <Form.Control aria-label="Amount (to the nearest dollar)" value={price}
-                onChange={e => setPrice(e.target.value)}/>
+              <Form.Control id="price" aria-label="Amount (to the nearest dollar)" value={work.price || ''}
+                onChange={handleFieldChange}/>
             </InputGroup>
           </Form.Group>
 
           <Form.Group className="mb-3" controlId="formBasicCheckbox">
             <Form.Check type="checkbox" label="Sold" 
-              checked={isSold}
+              checked={!!work.isSold}
               onChange={() => {
-                setSold(!isSold);
+                setWork({...work, isSold: !work.isSold})
+                // setSold(!isSold);
               }}/>
           </Form.Group>
 
           <Form.Group className="mb-3">
             <Form.Label>Tags</Form.Label>
-            <Typeahead id="tags" className={styles.typeahead} multiple placeholder="enter multiple tags"
-              onChange={setTags}
+            <Typeahead id="tags" 
+              className={styles.typeahead} 
+              multiple placeholder="enter multiple tags"
+              onChange={e => { console.log("tag update", e)}}
               options={options}
-              selected={tags}
+              selected={work.tags || []}
               clearButton={true}
               allowNew={true}
               size={'small'}
@@ -182,7 +162,7 @@ export default function EditModal({children, config, artwork, allTags, show, han
           </Form.Group>
 
           <Form.Group className="mb-3" controlId="formBasicCheckbox">
-            <Form.Check type="checkbox" label="Category Example" 
+            <Form.Check id="example" type="checkbox" label="Category Example" 
               checked={example}
               onChange={() => {
                 setExample(!example);
@@ -190,8 +170,8 @@ export default function EditModal({children, config, artwork, allTags, show, han
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Category Name</Form.Label>
-            <Form.Control type="text" disabled={!example} value={categoryName}
-              onChange={e => setCategoryName(e.target.value)}/>
+            <Form.Control id="categoryName" type="text" disabled={!example} value={work.categoryName || ''}
+              onChange={handleFieldChange}/>
             <Form.Text className="text-muted">
             </Form.Text>
           </Form.Group>
