@@ -22,7 +22,7 @@ function parseTags (tags, isExample=false): string[] {
   return res;
 }
 
-export default function EditModal({children, config, artwork, allTags, show, handleClose, handleSave }) {
+export default function EditModal({config={}, artwork={}, allTags=[], show, handleClose, handleSave }) {
   config = config as IConfig; // because I can't set types on the destructured vars above.
   artwork = artwork as IArtwork;
 
@@ -38,7 +38,7 @@ export default function EditModal({children, config, artwork, allTags, show, han
   useEffect(() => {
 
     setFileNum(getFileNum(artwork.imagePath) || '');
-    setExample(artwork.tags.includes('exemplar'));
+    setExample(artwork?.tags?.includes('exemplar') || false);
     setWork(artwork);
   }, [artwork])
 
@@ -77,7 +77,7 @@ export default function EditModal({children, config, artwork, allTags, show, han
         <Form>
           <Form.Group className="mb-3">
             <Form.Label>Title</Form.Label>
-            <Form.Control id="title" type="text" placeholder="Enter title" value={work.title || ''}
+            <Form.Control id="title" data-testid="title" type="text" placeholder="Enter title" value={work.title || ''}
               onChange={handleFieldChange}
               />
             <Form.Text className="text-muted"></Form.Text>
@@ -86,17 +86,17 @@ export default function EditModal({children, config, artwork, allTags, show, han
           <Form.Group className="mb-3">
             <Form.Label>Dimensions</Form.Label>
             <InputGroup className="mb-3">
-              <Form.Control id="width" aria-label="" placeholder="width" value={work.width || ''}
+              <Form.Control id="width" aria-label="width" placeholder="width" value={work.width || ''}
                 onChange={handleFieldChange}/>
               <InputGroup.Text>X</InputGroup.Text>
-              <Form.Control id="height" aria-label="" placeholder="height" value={work.height || ''}
+              <Form.Control id="height" aria-label="height" placeholder="height" value={work.height || ''}
                 onChange={handleFieldChange}/>
             </InputGroup>
           </Form.Group>
 
           <Form.Group className="mb-3">
             <Form.Label>Year</Form.Label>
-            <Form.Control id="year" type="text" value={work.year || ''}
+            <Form.Control id="year" data-testid="year" type="text" value={work.year || ''}
               onChange={handleFieldChange}/>
             <Form.Text className="text-muted">
             </Form.Text>
@@ -106,7 +106,7 @@ export default function EditModal({children, config, artwork, allTags, show, han
             <Form.Label>Filename</Form.Label>
             <InputGroup className="mb-3">
               <InputGroup.Text>{imagePathPrefix}</InputGroup.Text>
-              <Form.Control aria-label="" value={fileNum}
+              <Form.Control aria-label="filenum" value={fileNum}
                 onChange={e => setFileNum(e.target.value)}/>
               <InputGroup.Text>.jpg</InputGroup.Text>
             </InputGroup>
@@ -130,7 +130,7 @@ export default function EditModal({children, config, artwork, allTags, show, han
             <Form.Label>Price</Form.Label>
             <InputGroup className="mb-3">
               <InputGroup.Text>$</InputGroup.Text>
-              <Form.Control id="price" aria-label="Amount (to the nearest dollar)" value={work.price || ''}
+              <Form.Control id="price" data-testid="price" aria-label="Amount (to the nearest dollar)" value={work.price || ''}
                 onChange={handleFieldChange}/>
             </InputGroup>
           </Form.Group>
@@ -149,7 +149,9 @@ export default function EditModal({children, config, artwork, allTags, show, han
             <Typeahead id="tags" 
               className={styles.typeahead} 
               multiple placeholder="enter multiple tags"
-              onChange={e => { console.log("tag update", e)}}
+              onChange={newTags => { 
+                setWork({...work, tags: newTags})
+              }}
               options={options}
               selected={work.tags || []}
               clearButton={true}
@@ -162,7 +164,7 @@ export default function EditModal({children, config, artwork, allTags, show, han
           </Form.Group>
 
           <Form.Group className="mb-3" controlId="formBasicCheckbox">
-            <Form.Check id="example" type="checkbox" label="Category Example" 
+            <Form.Check id="example" aria-label="is example" type="checkbox" label="Category Example" 
               checked={example}
               onChange={() => {
                 setExample(!example);
@@ -170,7 +172,7 @@ export default function EditModal({children, config, artwork, allTags, show, han
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Category Name</Form.Label>
-            <Form.Control id="categoryName" type="text" disabled={!example} value={work.categoryName || ''}
+            <Form.Control id="categoryName" aria-label="category name" type="text" disabled={!example} value={work.categoryName || ''}
               onChange={handleFieldChange}/>
             <Form.Text className="text-muted">
             </Form.Text>

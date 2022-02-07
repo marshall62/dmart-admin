@@ -8,9 +8,9 @@ export default function ImageModal({ url, show, handleClose }) {
   }, [url]);
   return (
     <Modal size="lg" show={show} onHide={handleClose}>
-      <Modal.Header closeButton></Modal.Header>
+      <Modal.Header data-testid="closeButton" closeButton></Modal.Header>
       <Modal.Body>
-        <img src={myurl}></img>
+        <img data-testid="image" src={myurl}></img>
       </Modal.Body>
     </Modal>
   );
