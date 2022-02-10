@@ -23,7 +23,8 @@
       "@/components/*": ["components/*"],
       "@/pages/*": ["pages/*"],
       "@/hooks/*": ["hooks/*"],
-      "@/styles/*": ["styles/*"]
+      "@/styles/*": ["styles/*"],
+      "@/state/*": ["components/state/*"]
     }
   },
   "include": [

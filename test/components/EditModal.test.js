@@ -1,8 +1,11 @@
 import React from "react";
 import { unmountComponentAtNode} from "react-dom";
-import { render, screen} from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen, cleanup} from '@testing-library/react'
 import EditModal from "../../components/modals/EditModal";
+import {RecoilRoot, RecoilObserver} from 'recoil';
+import {configState} from '@/state/config'
+import {artworksState} from '@/state/artworks'
+import {tagsState} from '@/state/tags'
 
 
 // N.B. jest.config.js testEnvironment set to jdom for this to work
@@ -14,6 +17,9 @@ import EditModal from "../../components/modals/EditModal";
 
 
 let container = null;
+const config = {
+  filename: "david_marshall_"
+}
 beforeEach(() => {
   // setup a DOM element as a render target
   container = document.createElement("div");
@@ -25,28 +31,78 @@ afterEach(() => {
   unmountComponentAtNode(container);
   container.remove();
   container = null;
+  cleanup();
 });
 
 describe("Editing existing artwork",() => {
 
-  const artwork= {
-    title: "Space Invaders",
-    width: 100,
-    height: 40,
-    price: 1000,
-    media: "oil on canvas",
-    tags: ["landscape"],
-    imagePath: "david_marshall_4",
-    year: 2020,
-    isSold: true
-  }
+  let artwork;
+  let testComponent;
+  const onClose = jest.fn();
+  const onSave = jest.fn();
+
+  beforeEach(() => {
+    artwork = {
+      title: "Space Invaders",
+      width: 100,
+      height: 40,
+      price: 1000,
+      media: "oil on canvas",
+      tags: ["landscape"],
+      imagePath: "david_marshall_4.jpg",
+      year: 2020,
+      isSold: true,
+    };
+
+    testComponent = render(
+    <RecoilRoot initializeState={(snap) => 
+     {
+       snap.set(configState, {filename: 'david_marshall_'})
+       snap.set(tagsState, ['still life', 'landscape'])
+     }
+    }>
+      <EditModal artwork={artwork} show={true} handleClose={onClose} handleSave={onSave} />
+    </RecoilRoot>);
+  });
+
+  afterEach (() => {
+    jest.clearAllMocks();
+  })
+
+  it("changing the title field works ", () => {
+    const title = testComponent.getByTestId('title')
+    fireEvent.change(title, {target: {value: 'Las Meninas'}})
+    fireEvent.submit(testComponent.getByTestId('submit'), {target: {}})
+    expect(onSave).toHaveBeenCalledWith({...artwork, title: 'Las Meninas'});
+  })
+
+  it("changing the height and width fields works ", () => {
+    const width = testComponent.getByRole('textbox', {name: 'width'})
+    const height = testComponent.getByRole('textbox', {name: 'height'})
+    fireEvent.change(height, {target: {value: '12'}})
+    fireEvent.change(width, {target: {value: '13'}})
+    fireEvent.submit(testComponent.getByTestId('submit'), {target: {}})
+    expect(onSave).toHaveBeenCalledWith({...artwork, height:12, width:13});
+  })
+
+  it("changing the filename works ", () => {
+    const filenum = testComponent.getByRole('textbox', {name: 'filenum'})
+    fireEvent.change(filenum, {target: {value: '12'}})  
+    fireEvent.submit(testComponent.getByTestId('submit'), {target: {}})
+    expect(onSave).toHaveBeenCalledWith({...artwork, imagePath: 'david_marshall_12.jpg'});  
+  })
+
+  it("clearing tags works ", () => {
+    const clearTagsButton = testComponent.getByRole('button', {name: 'Clear'})
+    fireEvent.click(clearTagsButton)  
+    fireEvent.submit(testComponent.getByTestId('submit'), {target: {}})
+    expect(onSave).toHaveBeenCalledWith({...artwork, tags: []});  
+  })
+
 
   it("all form fields are populated correctly", () => {
-    // TODO tags not checked b/c its a Typeahead
-    const onClose = jest.fn();
-    const onSave = jest.fn();
-    render(<EditModal config={{}} artwork={artwork} allTags={["landscape", "still life"]} show={true} handleClose={onClose}
-       handleSave={onSave} />);
+    // TODO tags not checked b/c its a Typeahead and I cant gets its controls or values.
+
     const title = screen.getByTestId('title');
     const width = screen.getByPlaceholderText('width')
     const height = screen.getByPlaceholderText('height')
@@ -58,6 +114,7 @@ describe("Editing existing artwork",() => {
     const price = screen.getByTestId('price')
     const isExample = screen.getByRole('checkbox',{name: 'is example'})
     const categoryName = screen.getByRole('textbox',{name: 'category name'})
+
     expect(title).toHaveValue(artwork.title)
     expect(width).toHaveValue(`${artwork.width}`)
     expect(height).toHaveValue(`${artwork.height}`)
@@ -72,11 +129,16 @@ describe("Editing existing artwork",() => {
 })
 
 describe("Create new artwork", () => {
+
   it("all form fields are empty", () => {
     const onClose = jest.fn();
     const onSave = jest.fn();
-    render(<EditModal config={{}} artwork={{}} allTags={[]} show={true} handleClose={onClose}
-       handleSave={onSave} />);
+    render(<RecoilRoot initializeState={(snap) => 
+      {
+        snap.set(configState, {filename: 'david_marshall_'})
+      }
+     }>
+      <EditModal artwork={{}} show={true} handleClose={onClose} handleSave={onSave} /></RecoilRoot>);
     const title = screen.getByTestId('title');
     const width = screen.getByPlaceholderText('width')
     const height = screen.getByPlaceholderText('height')
@@ -94,14 +156,14 @@ describe("Create new artwork", () => {
 
   })
   
-  xit("calls close callback", () => {
+  it("calls close callback", () => {
     const onClose = jest.fn();
   
-    render(<EditModal show={true} handleClose={onClose}/>);
-    // N.B. the Modal.Header Close renders out as <button >
-    const button = screen.getByRole("button", {name: "Close"});
+    const {getAllByRole} = render(<RecoilRoot><EditModal artwork={{}} show={true} handleClose={onClose}/></RecoilRoot>);
+    // N.B. the Modal.Header Close renders out as <button > and is the first of 2 with this name
+    const button = getAllByRole("button", {name: "Close"})[0];
     expect(button).toHaveAttribute('aria-label', 'Close');
-    userEvent.click(button);
+    fireEvent.click(button);
     expect(onClose).toHaveBeenCalled();
   })
 })

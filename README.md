@@ -2,6 +2,14 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 ## Getting Started
 
+To create the next.js app from github
+
+npx create-next-app dmart-admin --use-npm --example "https://github.com/marshall62/dmart-admin"
+TODO test the above.
+
+Note:  I use a .env.local file which is not in github.  It sets up the API as my locally running 
+fastApi backend on localhost:8000.   If this file is in place it shadows the .env.development settings which have it talking to heroku.   If I need to test this, I just rename .env.local to .shmenv.local
+
 First, run the development server:
 
 ```bash

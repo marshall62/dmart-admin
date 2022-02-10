@@ -15,13 +15,13 @@
     "react-bootstrap": "^2.1.1",
     "react-bootstrap-typeahead": "*",
     "react-dom": "17.0.2",
-    "react-icons": "^4.3.1"
+    "react-icons": "^4.3.1",
+    "recoil": "^0.6.1"
   },
   "devDependencies": {
     "@testing-library/dom": "^8.11.3",
     "@testing-library/jest-dom": "^5.16.1",
     "@testing-library/react": "^12.1.2",
-    "@testing-library/user-event": "^13.5.0",
     "@types/node": "^17.0.13",
     "@types/react": "^17.0.38",
     "babel-jest": "^27.4.6",

@@ -1,7 +1,6 @@
 import React from "react";
 import { unmountComponentAtNode} from "react-dom";
-import {getByTestId, render, screen} from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import {fireEvent, render, screen} from '@testing-library/react'
 import ImageModal from "../../components/modals/ImageModal";
 
 // N.B. jest.config.js testEnvironment set to jdom for this to work
@@ -33,13 +32,13 @@ it("renders an img tag", () => {
   expect(img).toHaveAttribute('src', 'a/test/image.jpg');
 })
 
-it("calls close callback", () => {
+fit("calls close callback", () => {
   const onClose = jest.fn();
 
   render(<ImageModal url="a/test/image.jpg" show={true} handleClose={onClose}/>);
   // N.B. the Modal.Header Close renders out as <button >
   const button = screen.getByRole("button");
   expect(button).toHaveAttribute('aria-label', 'Close');
-  userEvent.click(button);
+  fireEvent.click(button);
   expect(onClose).toHaveBeenCalled();
 })

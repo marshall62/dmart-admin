@@ -1,28 +1,26 @@
+import { IArtwork } from 'models/artwork';
+import { IConfig } from 'models/config';
 import { Table } from 'react-bootstrap';
 import Button from 'react-bootstrap/Button';
 import { FaPencilAlt, FaTrash} from 'react-icons/fa';
+import { useRecoilState, useRecoilValue } from 'recoil';
+import { artworksState } from '@/components/state/artworks';
+import { configState } from '@/components/state/config';
+import { ArtworksService } from 'services/artworks';
 
-export default function ArtworkGrid ({config, artworks, callbackHandlers}) {
+export default function ArtworkGrid ({handleEditArtwork, handleShowImage}) {
 
-    const handleEditArtwork = callbackHandlers.handleEditArtwork;
-    const handleShowImage = callbackHandlers.handleShowImageModal;
-    const artworkDeleted = callbackHandlers.artworkDeleted;
+  const config = useRecoilValue<IConfig>(configState);
+  const [artworks, setArtworks] = useRecoilState<IArtwork[]>(artworksState);
+
 
     const deleteArtwork = async (id) => {
-        if (window.confirm("Delete this artwork " + id)) {
-            const res = await fetch("http://localhost:8000/works/" + id, {
-              method: "DELETE",
-              headers: {
-                Accept: "application/json",
-                "Content-Type": "application/json",
-              }
-            });
-            const status = await res.status;
-            // notify main app so it can update artworks state.
-            if (status === 204) {
-                artworkDeleted(id);
-            }
-        }
+      if (window.confirm("Delete this artwork " + id)) {
+          const status = await ArtworksService.deleteArtwork(id)
+          if (status === 204) {
+              setArtworks(artworks.filter((aw) => aw._id !== id));
+          }
+      }
     }
 
     return (

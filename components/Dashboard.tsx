@@ -8,97 +8,80 @@ import ImageModal from "@/components/modals/ImageModal";
 import { useState } from "react";
 import { IArtwork } from "models/artwork";
 import { IConfig } from "models/config";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import { artworksState } from "@/components/state/artworks";
+import { tagsState } from "@/components/state/tags";
+import { configState } from "@/components/state/config";
+import { ArtworksService } from "services/artworks";
 
-export default function Dashboard({ config, allArtworks, allTags }) {
+// export default function Dashboard() {
+export default function Dashboard() {
 
-  const [showArtworkEditor, setShowArtworkEditor] = useState(false);
-  const [artworks, setArtworks] = useState(allArtworks);
-  const [tags, setTags] = useState(new Set<string>(allTags));
+  const config = useRecoilValue<IConfig>(configState);
+  const [artworks, setArtworks] = useRecoilState<IArtwork[]>(artworksState);
+  const [tags, setTags] = useRecoilState<Set<string>>(tagsState);
+
+
+  const [showEditorModal, setShowEditorModal] = useState(false);
   const [artworkToEdit, setArtworkToEdit] = useState({});
   const [imageUrl, setImageUrl] = useState("");
-  const [showImage, setShowImage] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
 
 
   // handler functions that are callbacks from this and sub-components.
   
-  const handleClose = () => {
-    setShowArtworkEditor(false);   
+  const handleCloseEditModal = () => {
+    setShowEditorModal(false);   
   };
 
   const handleAdd = () => {
     setArtworkToEdit({ tags: [] });
-    setShowArtworkEditor(true);
+    setShowEditorModal(true);
   };
 
-  const handleCloseImage = () => {
-    setShowImage(false);
+  const handleCloseImageModal = () => {
+    setShowImageModal(false);
   };
 
   const handleShowImageModal = (imagePath) => {
-    setShowImage(true);
+    setShowImageModal(true);
     setImageUrl(config.imageRootURI + "/midsize/" + imagePath);
   };
 
-  // This callback is necessary because the child ArtworkGrid cant change the artworks state
-  // of this.  TODO move artworks into a Recoil state and then it will be able to.
-  const handleArtworkDeleted = async (id) => {
-    setArtworks(artworks.filter((aw) => aw._id !== id));
-  };
-
   const handleEditArtwork = async (artwork) => {
-    console.log("edit ", artwork);
     setArtworkToEdit(artwork);
-    setShowArtworkEditor(true);
+    setShowEditorModal(true);
   };
 
-  const handleSave = async (artworkInfo) => {
-    const artwork: IArtwork = toArtwork(artworkInfo);
-    parseTags(artwork.tags);
-    handleClose();
-    console.log("Saving", artwork);
-    const exists = !!artwork._id;
-    let url = "http://localhost:8000/works";
-    let method = "POST";
+
+  const handleSaveEditModal = async (work: IArtwork) => {
+    updateTagSet(work.tags);
+    handleCloseEditModal();
+    let  res;
+    const exists = !!work._id;
     if (exists) {
-      url += `/${artwork._id}`;
-      method = "PATCH";
+      res = await ArtworksService.updateArtwork(work);
     }
-    const res = await fetch(url, {
-      method: method,
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(artwork),
-    });
-    const content = await res.json();
-    const status = await res.status;
+    else {
+      res = await ArtworksService.saveArtwork(work);
+    }
+    let {status, artwork} = res;
+
     if (status === 201 && !exists) {
-      setArtworks([...artworks, content]);
-    } else if (status === 200 && exists) {
+      setArtworks([...artworks, artwork]);
+    } 
+    else if (status === 200 && exists) {
       const ix = artworks.findIndex((x) => artwork._id === x._id);
-      const newList = artworks.slice();
-      newList.splice(ix, 1, artwork);
+      const newList = artworks.slice(); // clone
+      newList.splice(ix, 1, artwork); // replace
       setArtworks(newList);
     }
   };
 
-  //   Helper functions
 
-  const toArtwork = (artworkInfo): IArtwork => {
-    const artwork = { ...artworkInfo };
-    artwork.price = artworkInfo.price
-      ? parseFloat(artworkInfo.price)
-      : undefined;
-    artwork.width = artworkInfo.width ? parseInt(artworkInfo.width) : undefined;
-    artwork.height = artworkInfo.height
-      ? parseInt(artworkInfo.height)
-      : undefined;
-    artwork.year = artwork.year ? parseInt(artworkInfo.year) : undefined;
-    return artwork;
-  };
 
-  const parseTags = (artworkTags: string[]) => {
+  // update the global set of tags to include any new ones added to the edited artwork.
+  const updateTagSet = (artworkTags: string[]) => {
     let newTags = false;
     artworkTags.forEach((tag) => {
       if (!tags.has(tag)) newTags = true;
@@ -109,6 +92,7 @@ export default function Dashboard({ config, allArtworks, allTags }) {
       setTags(newset);
     }
   };
+
 
   return (
     <main className={styles.main}>
@@ -131,27 +115,19 @@ export default function Dashboard({ config, allArtworks, allTags }) {
       </div>
       <ImageModal
         url={imageUrl}
-        show={showImage}
-        handleClose={handleCloseImage}
+        show={showImageModal}
+        handleClose={handleCloseImageModal}
       ></ImageModal>
       <EditModal
-        config={config}
         artwork={artworkToEdit}
-        allTags={tags}
-        show={showArtworkEditor}
-        handleClose={handleClose}
-        handleSave={handleSave}
+        show={showEditorModal}
+        handleClose={handleCloseEditModal}
+        handleSave={handleSaveEditModal}
       >
-        {" "}
       </EditModal>
       <ArtworkGrid
-        config={config}
-        artworks={artworks}
-        callbackHandlers={{
-          handleEditArtwork: handleEditArtwork,
-          artworkDeleted: handleArtworkDeleted,
-          handleShowImageModal: handleShowImageModal,
-        }}
+          handleEditArtwork= {handleEditArtwork}
+          handleShowImage= {handleShowImageModal}
       ></ArtworkGrid>
     </main>
   );
