@@ -1,14 +1,15 @@
 import { IArtwork } from "../models/artwork";
 
+
 export class ArtworksService {
 
-  public static async getArtworks() {
+  public static async getArtworks(): Promise<IArtwork[]> {
     const res = await fetch(process.env.NEXT_PUBLIC_API + 'works');
     let works: IArtwork[] = await res.json();
     return works;
   }
 
-  public static async deleteArtwork(id) {
+  public static async deleteArtwork(id): Promise<number> {
     const res = await fetch(process.env.NEXT_PUBLIC_API + "works/" + id, {
       method: "DELETE",
       headers: {

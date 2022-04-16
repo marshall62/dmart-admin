@@ -4,9 +4,11 @@ import { Table } from 'react-bootstrap';
 import Button from 'react-bootstrap/Button';
 import { FaPencilAlt, FaTrash} from 'react-icons/fa';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { artworksState } from '@/components/state/artworks';
-import { configState } from '@/components/state/config';
-import { ArtworksService } from 'services/artworks';
+import { artworksState } from '@components/state/artworks';
+import { configState } from '@components/state/config';
+import { ArtworksService } from '@services/artworks';
+
+import styles from './ArtworkGrid.module.css';
 
 export default function ArtworkGrid ({handleEditArtwork, handleShowImage}) {
 
@@ -34,6 +36,7 @@ export default function ArtworkGrid ({handleEditArtwork, handleShowImage}) {
             <th>price</th>
             <th>media</th>
             <th>filename</th>
+            <th>Active</th>
             <th></th>
           </tr>
         </thead>
@@ -45,14 +48,17 @@ export default function ArtworkGrid ({handleEditArtwork, handleShowImage}) {
               <td>{a.title}</td>
               <td>{a.year}</td>
               <td>{a.width} {a.width ? "x" : ""} {a.height}</td>
-              <td>{a.price}</td>
+              <td>{a.isSold ? "sold" : a.price}</td>
               <td>{a.media}</td>
               <td>{a.imagePath}</td>
+              <td>{!a.isActive ? 'No' : ''}</td>
               <td>
-                <Button onClick={() => handleEditArtwork(a) }>
+                <div className={styles.buttondiv}>
+                <Button variant="outline-primary" data-testid="editButton" onClick={() => handleEditArtwork(a) }>
                   <FaPencilAlt />
                 </Button>
-                <Button onClick={() => deleteArtwork(a._id)}><FaTrash /></Button>
+                <Button variant="outline-danger" data-testid="deleteButton" onClick={() => deleteArtwork(a._id)}><FaTrash /></Button>
+                </div>
               </td>
             </tr>
           )

@@ -2,17 +2,18 @@ import styles from "./Dashboard.module.css";
 import Button from "react-bootstrap/Button";
 import { GrAdd } from "react-icons/gr";
 import Head from "next/head";
-import ArtworkGrid from "@/components/ArtworkGrid";
-import EditModal from "@/components/modals/EditModal";
-import ImageModal from "@/components/modals/ImageModal";
+import ArtworkGrid from "@components/ArtworkGrid";
+import EditModal from "@components/modals/EditModal";
+import ImageModal from "@components/modals/ImageModal";
 import { useState } from "react";
+import { ArtworksService } from "@services/artworks";
 import { IArtwork } from "models/artwork";
 import { IConfig } from "models/config";
-import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { artworksState } from "@/components/state/artworks";
-import { tagsState } from "@/components/state/tags";
-import { configState } from "@/components/state/config";
-import { ArtworksService } from "services/artworks";
+import { useRecoilState, useRecoilValue } from "recoil";
+import { artworksState } from "@components/state/artworks";
+import { tagsState } from "@components/state/tags";
+import { configState } from "@components/state/config";
+
 
 // export default function Dashboard() {
 export default function Dashboard() {
@@ -22,8 +23,8 @@ export default function Dashboard() {
   const [tags, setTags] = useRecoilState<Set<string>>(tagsState);
 
 
-  const [showEditorModal, setShowEditorModal] = useState(false);
-  const [artworkToEdit, setArtworkToEdit] = useState({});
+  const [showEditorModal, setShowEditorModal] = useState<boolean>(false);
+  const [artworkToEdit, setArtworkToEdit] = useState<IArtwork>({} as IArtwork);
   const [imageUrl, setImageUrl] = useState("");
   const [showImageModal, setShowImageModal] = useState(false);
 
@@ -35,7 +36,7 @@ export default function Dashboard() {
   };
 
   const handleAdd = () => {
-    setArtworkToEdit({ tags: [] });
+    setArtworkToEdit({ tags: [] } as IArtwork);
     setShowEditorModal(true);
   };
 
@@ -59,9 +60,13 @@ export default function Dashboard() {
     handleCloseEditModal();
     let  res;
     const exists = !!work._id;
+    // Serious Issue:  During testing in Dashboard (line 94) the test results in EditModal calling this function
+    // with an artwork that has undefined tags and _id - probably all fields are undefined.  This makes all
+    // the logic within this do the wrong thing (e.g. the exists gets set to false and then it runs the logic for new artworks
+    // rather than patching existing)  Why is this empty artwork sent to this?
     if (exists) {
-      res = await ArtworksService.updateArtwork(work);
-    }
+      res = await ArtworksService.updateArtwork(work); 
+        }
     else {
       res = await ArtworksService.saveArtwork(work);
     }
@@ -80,12 +85,16 @@ export default function Dashboard() {
 
 
 
+
+
   // update the global set of tags to include any new ones added to the edited artwork.
-  const updateTagSet = (artworkTags: string[]) => {
-    let newTags = false;
-    artworkTags.forEach((tag) => {
-      if (!tags.has(tag)) newTags = true;
-    });
+  // N.B. There is no reason for defaulting artWork tags to [].  But in running
+  // jest tests this method gets passed undefined despite 
+  // the EditModal correctly forming an IArtwork (with tags) and calling back to the
+  // save handler.
+  const updateTagSet = (artworkTags: string[] = []) => {
+    let newTags = artworkTags.some(tag => !tags.has(tag))
+
     if (newTags) {
       const newset = new Set<string>(tags);
       artworkTags.forEach((t) => newset.add(t));
@@ -108,7 +117,7 @@ export default function Dashboard() {
           </h1>
         </div>
         <div>
-          <Button onClick={handleAdd}>
+          <Button data-testid="addArtwork" onClick={handleAdd}>
             <GrAdd />
           </Button>
         </div>
@@ -123,6 +132,7 @@ export default function Dashboard() {
         show={showEditorModal}
         handleClose={handleCloseEditModal}
         handleSave={handleSaveEditModal}
+
       >
       </EditModal>
       <ArtworkGrid

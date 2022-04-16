@@ -4,25 +4,38 @@ import { useEffect, useState } from "react";
 import { Button, Form, InputGroup, Modal } from "react-bootstrap";
 import { Typeahead } from "react-bootstrap-typeahead";
 import 'react-bootstrap-typeahead/css/Typeahead.css';
-import { IConfig } from "models/config";
-import { IArtwork } from "models/artwork";
 import { useRecoilValue } from "recoil";
-import { configState } from "@/state/config";
-import { tagsState } from "@/state/tags";
+import { configState } from "@state/config";
+import { tagsState } from "@state/tags";
+import { IArtwork } from "@models/artwork";
+import { IConfig } from "@models/config";
 
+interface EditModalProps {
+  artwork: IArtwork,
+  show: boolean,                                     
+  handleClose: () => void,
+  handleSave: (w: IArtwork) => void,
+  children?: any
+}
 
+const formDataFromArtwork = (artwork: IArtwork) => {
+  return {...artwork, 
+    year: artwork.year ? artwork.year.toString() : '',
+    width: artwork.width ? artwork.width.toString() : '',
+    height: artwork.height ? artwork.height.toString() : '',
+    price: artwork.price ? artwork.price.toString() : '',
+    media: artwork.media || ''
+   }
+}
 
-
-export default function EditModal({ artwork, show, handleClose, handleSave }) {
-
-  artwork = artwork as IArtwork;
+export default function EditModal({ artwork, show, handleClose, handleSave }: EditModalProps) {
 
   const config = useRecoilValue<IConfig>(configState);
   const allTags = useRecoilValue<Set<string>>(tagsState);
   const [fileNum, setFileNum] = useState('')
-  const [work, setWork] = useState(artwork);
+  const [formData, setFormData] = useState(formDataFromArtwork(artwork));
   const [example, setExample] = useState(false);
-  const [errors, setErrors] = useState({})
+  const [errors, setErrors] = useState<any>({})
 
   let options = Array.from(allTags);
   const imagePathPrefix = config.filename;
@@ -32,8 +45,8 @@ export default function EditModal({ artwork, show, handleClose, handleSave }) {
   // to the new values.
   useEffect(() => {
     setFileNum(extractFileNumberFromImagePath(artwork.imagePath) || '');
-    setExample(artwork?.tags?.includes('exemplar') || false);
-    setWork(artwork);
+    setExample(artwork?.tags?.includes('exemplar'));
+    setFormData(formDataFromArtwork(artwork));
     setErrors({})
   }, [artwork])
 
@@ -55,13 +68,13 @@ export default function EditModal({ artwork, show, handleClose, handleSave }) {
 
   const validateForm = () => {
     const newErrors = {}
-    if (!work.title || work.title.trim() === '') {
+    if (!formData.title || formData.title.trim() === '') {
       newErrors['title'] = "title is required";
     }
-    if (example && (!work.categoryName || work.categoryName.trim() === '')) {
+    if (example && (!formData.categoryName || formData.categoryName.trim() === '')) {
       newErrors['categoryName'] = 'Must provide category name if the artwork is an example'
     }
-    else if (!example && !!work.categoryName && work.categoryName.trim() !== '' ) {
+    else if (!example && !!formData.categoryName && formData.categoryName.trim() !== '' ) {
       newErrors['categoryName'] = 'Category name cannot be present when not an example'
     }
     if (Object.keys(newErrors).length > 0) {
@@ -73,17 +86,21 @@ export default function EditModal({ artwork, show, handleClose, handleSave }) {
   }
 
   const artworkFromForm = (): IArtwork => {
-    const editedArtwork = {...work, 
-      tags: transformTypeaheadTags(work.tags, example), 
+    const editedArtwork = {...formData, 
+      tags: transformTypeaheadTags(formData.tags, example), 
       imagePath: fileNum ? (imagePathPrefix + fileNum + '.jpg') : '', 
-      price: work.price ? parseFloat(work.price) : undefined,
-      width: work.width ? parseInt(work.width) : undefined,
-      height: work.height ? parseInt(work.height) : undefined,
-      year: work.year ? parseInt(work.year) : undefined,
+      price: formData.price ? parseFloat(formData.price) : undefined,
+      width: formData.width ? parseInt(formData.width) : undefined,
+      height: formData.height ? parseInt(formData.height) : undefined,
+      year: formData.year ? parseInt(formData.year) : undefined,
     }
     return editedArtwork;
   }
 
+
+
+  // tags that are newly created (i.e. not chosen from existing list) are wrapped as objects and must be 
+  // turned into plain strings in the array of tag strings.
   const transformTypeaheadTags = (tags, isExample=false): string[] => {
     const res = tags.map(t => {
       if (typeof(t) == "string")
@@ -91,6 +108,7 @@ export default function EditModal({ artwork, show, handleClose, handleSave }) {
       else if (typeof(t) == 'object')
         return t.label;
     });
+    // add/remove the tag "exemplar" if the artwork is marked as an example.
     if (isExample && !res.includes('exemplar'))
       res.push('exemplar')
     else if (!isExample && res.includes('exemplar')) 
@@ -100,7 +118,7 @@ export default function EditModal({ artwork, show, handleClose, handleSave }) {
 
   const handleFieldChange = (e) => {
     // clever way to set any field where field name is [e.target.id]
-    setWork({...work, [e.target.id]: e.target.value})
+    setFormData({...formData, [e.target.id]: e.target.value})
   }
 
   const handleSubmit = (e) => {
@@ -123,7 +141,7 @@ export default function EditModal({ artwork, show, handleClose, handleSave }) {
               data-testid="title"
               type="text"
               placeholder="Enter title"
-              value={work.title || ""}
+              value={formData.title || ""}
               isInvalid={!!errors.title}
               onChange={handleFieldChange}
             />
@@ -141,7 +159,7 @@ export default function EditModal({ artwork, show, handleClose, handleSave }) {
                 type="text"
                 aria-label="width"
                 placeholder="width"
-                value={work.width || ""}
+                value={formData.width}
                 onChange={handleFieldChange}
               />
               <InputGroup.Text>X</InputGroup.Text>
@@ -150,7 +168,7 @@ export default function EditModal({ artwork, show, handleClose, handleSave }) {
                 type="text"
                 aria-label="height"
                 placeholder="height"
-                value={work.height || ""}
+                value={formData.height}
                 onChange={handleFieldChange}
               />
             </InputGroup>
@@ -162,7 +180,7 @@ export default function EditModal({ artwork, show, handleClose, handleSave }) {
               id="year"
               data-testid="year"
               type="text"
-              value={work.year || ""}
+              value={formData.year}
               onChange={handleFieldChange}
             />
             <Form.Text className="text-muted"></Form.Text>
@@ -187,7 +205,7 @@ export default function EditModal({ artwork, show, handleClose, handleSave }) {
             <Form.Select
               id="media"
               aria-label="media"
-              value={work.media || ""}
+              value={formData.media}
               onChange={handleFieldChange}
             >
               <option>-</option>
@@ -201,14 +219,14 @@ export default function EditModal({ artwork, show, handleClose, handleSave }) {
           </Form.Group>
 
           <Form.Group>
-            <Form.Label>Price</Form.Label>
+            <Form.Label for="price">Price</Form.Label>
             <InputGroup className="mb-3">
               <InputGroup.Text>$</InputGroup.Text>
               <Form.Control
                 id="price"
                 data-testid="price"
                 aria-label="Amount (to the nearest dollar)"
-                value={work.price || ""}
+                value={formData.price}
                 onChange={handleFieldChange}
               />
             </InputGroup>
@@ -218,9 +236,9 @@ export default function EditModal({ artwork, show, handleClose, handleSave }) {
             <Form.Check
               type="checkbox"
               label="Sold"
-              checked={!!work.isSold}
+              checked={!!formData.isSold}
               onChange={() => {
-                setWork({ ...work, isSold: !work.isSold });
+                setFormData({ ...formData, isSold: !formData.isSold });
               }}
             />
           </Form.Group>
@@ -234,10 +252,10 @@ export default function EditModal({ artwork, show, handleClose, handleSave }) {
               multiple
               placeholder="enter multiple tags"
               onChange={(newTags: string[]) => {
-                setWork({ ...work, tags: newTags });
+                setFormData({ ...formData, tags: newTags });
               }}
               options={options}
-              selected={work.tags || []}
+              selected={formData.tags || []}
               clearButton={true}
               allowNew={true}
               size={"small"}
@@ -257,6 +275,15 @@ export default function EditModal({ artwork, show, handleClose, handleSave }) {
                 setExample(!example);
               }}
             />
+            <Form.Check
+              id="active"
+              data-testid="active"
+              aria-label="is active"
+              type="checkbox"
+              label="Active"
+              checked={formData.isActive}
+              onChange={() => {setFormData({...formData, isActive: !formData.isActive})}}
+            />
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Category Name</Form.Label>
@@ -265,7 +292,7 @@ export default function EditModal({ artwork, show, handleClose, handleSave }) {
               aria-label="category name"
               type="text"
               disabled={!example}
-              value={work.categoryName || ""}
+              value={formData.categoryName || ""}
               isInvalid={!!errors.categoryName}
               onChange={handleFieldChange}
             />

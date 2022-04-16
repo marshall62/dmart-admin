@@ -18,13 +18,15 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
+    "types": ["cypress", "@testing-library/cypress"],
     "baseUrl": ".",
     "paths": {
-      "@/components/*": ["components/*"],
-      "@/pages/*": ["pages/*"],
-      "@/hooks/*": ["hooks/*"],
-      "@/styles/*": ["styles/*"],
-      "@/state/*": ["components/state/*"]
+      "@components/*": ["components/*"],
+      "@models/*": ["models/*"],
+      "@services/*": ["services/*"],
+      "@pages/*": ["pages/*"],
+      "@styles/*": ["styles/*"],
+      "@state/*": ["components/state/*"]
     }
   },
   "include": [

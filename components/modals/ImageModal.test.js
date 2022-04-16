@@ -1,7 +1,7 @@
 import React from "react";
 import { unmountComponentAtNode} from "react-dom";
 import {fireEvent, render, screen} from '@testing-library/react'
-import ImageModal from "../../components/modals/ImageModal";
+import ImageModal from "@components/modals/ImageModal";
 
 // N.B. jest.config.js testEnvironment set to jdom for this to work
 

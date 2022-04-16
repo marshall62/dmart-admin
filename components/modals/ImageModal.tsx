@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Modal } from "react-bootstrap";
+
 export default function ImageModal({ url, show, handleClose }) {
   const [myurl, setMyURL] = useState(url);
 

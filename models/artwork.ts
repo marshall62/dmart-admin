@@ -9,5 +9,6 @@ export interface IArtwork {
     categoryName: string | null,
     isSold: boolean,
     media: string,
-    imagePath: string
+    imagePath: string,
+    isActive: boolean
 }

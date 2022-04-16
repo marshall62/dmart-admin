@@ -1,11 +1,11 @@
 import React from "react";
 import { unmountComponentAtNode} from "react-dom";
 import { fireEvent, render, screen, cleanup} from '@testing-library/react'
-import EditModal from "../../components/modals/EditModal";
-import {RecoilRoot, RecoilObserver} from 'recoil';
-import {configState} from '@/state/config'
-import {artworksState} from '@/state/artworks'
-import {tagsState} from '@/state/tags'
+
+import {RecoilRoot} from 'recoil';
+import EditModal from '@components/modals/EditModal';
+import {configState} from '@state/config'
+import {tagsState} from '@state/tags'
 
 
 // N.B. jest.config.js testEnvironment set to jdom for this to work
@@ -138,7 +138,8 @@ describe("Create new artwork", () => {
         snap.set(configState, {filename: 'david_marshall_'})
       }
      }>
-      <EditModal artwork={{}} show={true} handleClose={onClose} handleSave={onSave} /></RecoilRoot>);
+      <EditModal artwork={{}} show={true} handleClose={onClose} handleSave={onSave} />
+      </RecoilRoot>);
     const title = screen.getByTestId('title');
     const width = screen.getByPlaceholderText('width')
     const height = screen.getByPlaceholderText('height')
@@ -155,15 +156,27 @@ describe("Create new artwork", () => {
     elements.forEach(element => expect(element).toContainHTML(''))
 
   })
+
+  it("Saving an empty artwork form has the title field marked invalid", () => {
+    const onSave = jest.fn();
   
-  it("calls close callback", () => {
+    const {getByText, queryByText} = render(<RecoilRoot><EditModal artwork={{}} show={true} handleSave={onSave}/></RecoilRoot>);
+    const button = getByText("Save Changes");
+    expect(queryByText('title is required')).toBeNull();
+    fireEvent.click(button);
+    expect(getByText('title is required')).not.toBeNull();
+    expect(onSave).not.toHaveBeenCalled();
+  })
+  
+  it("Clicking close calls the close callback", () => {
     const onClose = jest.fn();
   
     const {getAllByRole} = render(<RecoilRoot><EditModal artwork={{}} show={true} handleClose={onClose}/></RecoilRoot>);
     // N.B. the Modal.Header Close renders out as <button > and is the first of 2 with this name
     const button = getAllByRole("button", {name: "Close"})[0];
-    expect(button).toHaveAttribute('aria-label', 'Close');
     fireEvent.click(button);
     expect(onClose).toHaveBeenCalled();
   })
 })
+
+

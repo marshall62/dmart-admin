@@ -1,14 +1,15 @@
 
-import { ArtworksService } from "services/artworks";
+
 import "bootstrap/dist/css/bootstrap.css";
-import {RecoilRoot, useRecoilState, useSetRecoilState} from 'recoil';
-import {configState} from "components/state/config";
-import {artworksState} from "components/state/artworks";
-import {tagsState} from "components/state/tags";
-import { IArtwork } from "models/artwork";
-import { IConfig } from "models/config";
-import Dashboard from "@/components/Dashboard";
 import { useEffect } from "react";
+import { useSetRecoilState }  from 'recoil';
+import { configState } from "@state/config";
+import { artworksState } from "@state/artworks";
+import { tagsState } from "@state/tags";
+import { IArtwork } from "@models/artwork";
+import { IConfig } from "@models/config";
+import { ArtworksService } from "@services/artworks";
+import Dashboard from "@components/Dashboard";
 
 // export async function getStaticProps() {
 
